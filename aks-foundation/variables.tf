@@ -1290,7 +1290,7 @@ variable "node_resource_group" {
 
 variable "oidc_issuer_enabled" {
   type        = bool
-  default     = false
+  default     = true
   description = "Enable or Disable the OIDC issuer URL. Defaults to false."
 }
 
@@ -1562,7 +1562,7 @@ EOT
 
 variable "workload_identity_enabled" {
   type        = bool
-  default     = false
+  default     = true
   description = "Enable or Disable Workload Identity. Defaults to false."
 }
 
