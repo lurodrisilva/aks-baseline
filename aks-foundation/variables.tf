@@ -650,7 +650,7 @@ EOT
 
 variable "kubernetes_version" {
   type        = string
-  default     = "1.33"
+  default     = "1.34"
   description = "Specify which Kubernetes release to use. The default used is the latest Kubernetes version available in the region"
 }
 

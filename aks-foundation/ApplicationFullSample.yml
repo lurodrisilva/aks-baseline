@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-api
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: platform-api
+    app.kubernetes.io/part-of: platform
+  finalizers:
+    # Ensures Argo CD deletes managed resources when the Application is deleted (with prune enabled)
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  # Must match an existing AppProject
+  project: platform-project
+
+  # What and from where
+  source:
+    repoURL: https://github.com/my-org/platform-apps.git
+    targetRevision: main      # can be branch, tag, commit, or semver constraint for Helm
+    path: apps/platform-api/overlays/prod
+
+    # If using Helm, uncomment and configure:
+    # chart: platform-api
+    # helm:
+    #   releaseName: platform-api
+    #   valueFiles:
+    #     - values.yaml
+    #     - values-prod.yaml
+    #   parameters:
+    #     - name: image.tag
+    #       value: "1.2.3"
+    #   fileParameters:
+    #     - name: extraConfig
+    #       path: config/extra.yaml
+
+    # If using Kustomize, you can add:
+    # kustomize:
+    #   namePrefix: prod-
+    #   nameSuffix: -v1
+    #   commonLabels:
+    #     env: prod
+
+    # If your manifests are plain YAML, leave only repoURL/targetRevision/path
+
+  # Where to deploy
+  destination:
+    server: https://kubernetes.default.svc   # in-cluster API URL or external cluster URL
+    namespace: platform                      # must be allowed by the AppProject
+
+  # Optional: customize sync behavior
+  syncPolicy:
+    automated:
+      prune: true           # delete resources not defined in Git
+      selfHeal: true        # revert out-of-band changes in-cluster
+      allowEmpty: false     # if true, allows an empty app (no manifests) without failing
+    syncOptions:
+      - CreateNamespace=true          # create target namespace if it doesn't exist
+      - ApplyOutOfSyncOnly=true       # only apply out-of-sync resources
+      - RespectIgnoreDifferences=true # honor ignoreDifferences during sync
+      # - ServerSideApply=true        # enable SSA if desired
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s     # initial backoff
+        factor: 2        # exponential factor
+        maxDuration: 3m  # max backoff time
+
+  # Optional: ignore specific diff fields (e.g., HPA status, pod annotations)
+  ignoreDifferences:
+    - group: "apps"
+      kind: Deployment
+      name: platform-api
+      namespace: platform
+      jsonPointers:
+        - /spec/replicas           # ignore live replica changes (e.g. HPA/manual scale)
+    - group: ""
+      kind: Service
+      jsonPointers:
+        - /spec/clusterIP
+
+  # Optional: hook into health and sync via resource hooks (annotations on manifests)
+  # See docs for detailed hook usage.
+
+  # Optional: info items shown in UI
+  info:
+    - name: owner
+      value: platform-team
+    - name: slack
+      value: "#platform-alerts"
+    - name: repo
+      value: "https://github.com/my-org/platform-apps"
+
+  # Optional: specify revision history limit for rollout / history
+  revisionHistoryLimit: 10

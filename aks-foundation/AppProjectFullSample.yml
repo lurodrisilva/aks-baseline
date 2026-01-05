@@ -1,0 +1,106 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform-project
+  namespace: argocd
+  # Optional: prevent deletion while apps still reference this project
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+
+spec:
+  description: Platform team project for shared services
+
+  # Repositories that applications in this project can use
+  sourceRepos:
+    - https://github.com/my-org/platform-apps.git
+    - https://github.com/my-org/infra-helm-charts.git
+
+  # Where applications in this project are allowed to deploy
+  destinations:
+    # In-cluster, specific namespaces
+    - name: in-cluster
+      server: https://kubernetes.default.svc
+      namespace: platform
+    - name: in-cluster-monitoring
+      server: https://kubernetes.default.svc
+      namespace: monitoring
+    # External cluster by API server URL, any namespace
+    - name: prod-cluster
+      server: https://prod-k8s.mycorp.internal
+      namespace: "*"
+
+  # Optional: restrict which cluster-scoped resources can be managed
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: "rbac.authorization.k8s.io"
+      kind: ClusterRoleBinding
+
+  # Optional: restrict which namespaced resources can be managed
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: "apps"
+      kind: Deployment
+    - group: "networking.k8s.io"
+      kind: Ingress
+
+  # Optional: per-project RBAC roles
+  roles:
+    - name: platform-admin
+      description: Full access to all applications in the platform project
+      policies:
+        # Casbin-style rules: p, subject, resource, action, effect
+        - p, proj:platform-project:platform-admin, applications, *, platform-project/*, allow
+        - p, proj:platform-project:platform-admin, clusters, get, *, allow
+        - p, proj:platform-project:platform-admin, repositories, get, *, allow
+      groups:
+        - oidc:platform-admins
+
+    - name: platform-readonly
+      description: Read-only access to apps in this project
+      policies:
+        - p, proj:platform-project:platform-readonly, applications, get, platform-project/*, allow
+        - p, proj:platform-project:platform-readonly, applications, sync, platform-project/*, deny
+      groups:
+        - oidc:platform-viewers
+
+  # Optional: sync windows (maintenance / freeze periods)
+  syncWindows:
+    # Deny syncs during workdays maintenance window, except for admins
+    - kind: deny
+      schedule: "0 22 * * 1-5"        # 22:00 UTC Monday–Friday
+      duration: "120"                   # minutes
+      applications:
+        - "*"                         # all apps in this project
+      timeZone: "UTC"
+
+    # Allow emergency syncs for specific namespaces even during deny window
+    - kind: allow
+      schedule: "0 0 * * *"          # every day at 00:00 UTC
+      duration: "60"
+      namespaces:
+        - platform
+      timeZone: "UTC"
+
+  # Optional: orphaned resource monitoring
+  orphanedResources:
+    warn: true
+    ignore:
+      - group: ""
+        kind: ConfigMap
+        name: kube-root-ca.crt
+
+  # Optional: ensure destinations only reference project-scoped clusters
+  permitOnlyProjectScopedClusters: false
+
+  # Optional: service account impersonation per destination (Argo CD v2.6+)
+  destinationServiceAccounts:
+    - server: https://kubernetes.default.svc
+      namespace: platform
+      defaultServiceAccount: argocd-platform-sync
+    - server: https://prod-k8s.mycorp.internal
+      namespace: "*"
+      defaultServiceAccount: argocd-prod-sync

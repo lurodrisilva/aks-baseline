@@ -12,11 +12,11 @@ init:
 		exit 1; \
 	fi
 
-plan: 
+plan: init
 	@echo '## Planning...'
 	terraform -chdir=./aks-foundation plan -out=tfplan
 
-apply: 
+apply: plan
 	@echo '## Applying...'
 	@terraform show 'tfplan' >/dev/null 2>&1 || make plan
 	terraform -chdir=./aks-foundation apply 'tfplan'

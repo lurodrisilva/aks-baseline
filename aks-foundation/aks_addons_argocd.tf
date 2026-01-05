@@ -44,6 +44,8 @@ resource "helm_release" "argocd" {
         resource.compareoptions: |
           ignoreResourceStatusField: all
           ignoreDifferencesOnResourceUpdates: true
+      params:
+        application.namespaces: "*"  # Adding namespaces to be managed by ArgoCD
 
     EOT
   ]
@@ -55,44 +57,53 @@ resource "helm_release" "argocd" {
 }
 
 resource "kubectl_manifest" "argocd_project_addons" {
-  yaml_body = <<EOF
+  yaml_body = <<-EOF
   apiVersion: argoproj.io/v1alpha1
   kind: AppProject
   metadata:
     name: addons-project
     namespace: ${local.namespaces.devops}
+    finalizers:
+      - resources-finalizer.argocd.argoproj.io    
   spec:
+    description: Platform Project for AKS Addons
     clusterResourceWhitelist:
       - group: '*'
         kind: '*'
     destinations:
-      - namespace: '*'
-        server: '*'
+      - name: in-cluster
+        server: https://kubernetes.default.svc
+        namespace: '*'
     sourceRepos:
       - '*'
+    sourceNamespaces:
+      - '*'
+    namespaceResourceWhitelist:
+      - group: '*'
+        kind: '*'
   EOF
   depends_on = [ helm_release.argocd ]
 }
 
-resource "kubectl_manifest" "argocd_project_jarvix" {
-  yaml_body = <<EOF
-  apiVersion: argoproj.io/v1alpha1
-  kind: AppProject
-  metadata:
-    name: jarvix-project
-    namespace: ${local.namespaces.devops}
-  spec:
-    clusterResourceWhitelist:
-      - group: '*'
-        kind: '*'
-    destinations:
-      - namespace: '${local.namespaces.jarvix}'
-        server: '*'
-    sourceRepos:
-      - '*'
-  EOF
-  depends_on = [ helm_release.argocd ]
-}
+# resource "kubectl_manifest" "argocd_project_jarvix" {
+#   yaml_body = <<EOF
+#   apiVersion: argoproj.io/v1alpha1
+#   kind: AppProject
+#   metadata:
+#     name: jarvix-project
+#     namespace: ${local.namespaces.devops}
+#   spec:
+#     clusterResourceWhitelist:
+#       - group: '*'
+#         kind: '*'
+#     destinations:
+#       - namespace: '${local.namespaces.jarvix}'
+#         server: '*'
+#     sourceRepos:
+#       - '*'
+#   EOF
+#   depends_on = [ helm_release.argocd ]
+# }
 
 ################################################################################
 # ArgoCD Repository - GitOps
@@ -125,7 +136,7 @@ resource "kubectl_manifest" "argocd_app_gitops" {
     kind: Application
     metadata:
       name: gitops
-      namespace: ${local.namespaces.devops}
+      namespace: ${local.namespaces.control_plane}
     spec:
       project: addons-project
       source:
@@ -134,15 +145,16 @@ resource "kubectl_manifest" "argocd_app_gitops" {
         path: base_chart
       destination:
         server: https://kubernetes.default.svc
-        namespace: ${local.namespaces.devops}
+        namespace: ${local.namespaces.control_plane}
       syncPolicy:
         automated:
           prune: true
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true       # only apply out-of-sync resources
   EOF
-  depends_on = [helm_release.argocd, kubectl_manifest.argocd_repo_gitops]
+  depends_on = [kubectl_manifest.argocd_repo_gitops, kubectl_manifest.argocd_project_addons]
 }
 
 # resource "kubectl_manifest" "argocd_repo_helm_charts" {

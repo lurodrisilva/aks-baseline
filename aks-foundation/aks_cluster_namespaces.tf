@@ -9,6 +9,7 @@ locals {
     test          = "test-system"
     storage       = "storage-system"
     ai            = "ai-system"
+    control_plane = "control-plane-system"
   }
 }
 
