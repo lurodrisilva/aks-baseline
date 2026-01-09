@@ -57,3 +57,20 @@ resource "azurerm_role_assignment" "crossplane_contributor" {
     azurerm_resource_group.aks_control_plane
   ]
 }
+
+################################################################################
+# ASO Workload Identity - Federated Credential on App Registration
+################################################################################
+
+resource "azuread_application_federated_identity_credential" "aso_controller" {
+  display_name      = "aso-controller"
+  application_id    = azuread_application.crossplane.id
+  audiences         = ["api://AzureADTokenExchange"]
+  issuer            = azurerm_kubernetes_cluster.main.oidc_issuer_url
+  subject           = "system:serviceaccount:azureserviceoperator-system:azureserviceoperator-default"
+
+  depends_on = [
+    azurerm_kubernetes_cluster.main,
+    azuread_application.crossplane
+  ]
+}

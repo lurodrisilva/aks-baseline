@@ -1573,6 +1573,22 @@ variable "workload_identity_enabled" {
 }
 
 ################################################################################
+# ArgoCD wait tuning
+################################################################################
+
+variable "argocd_app_wait_interval_seconds" {
+  type        = number
+  default     = 5
+  description = "Seconds between ArgoCD app status checks when waiting for Synced/Healthy."
+}
+
+variable "argocd_app_wait_timeout_seconds" {
+  type        = number
+  default     = 600
+  description = "Maximum seconds to wait for the ArgoCD app to become Synced/Healthy."
+}
+
+################################################################################
 # Crossplane Variables
 ################################################################################
 
