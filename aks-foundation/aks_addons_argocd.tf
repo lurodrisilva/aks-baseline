@@ -57,14 +57,14 @@ resource "helm_release" "argocd" {
 }
 
 resource "kubectl_manifest" "argocd_project_addons" {
-  yaml_body = <<-EOF
+  yaml_body  = <<-EOF
   apiVersion: argoproj.io/v1alpha1
   kind: AppProject
   metadata:
     name: addons-project
     namespace: ${local.namespaces.devops}
-    finalizers:
-      - resources-finalizer.argocd.argoproj.io    
+    # finalizers:
+    #   - resources-finalizer.argocd.argoproj.io
   spec:
     description: Platform Project for AKS Addons
     clusterResourceWhitelist:
@@ -82,7 +82,7 @@ resource "kubectl_manifest" "argocd_project_addons" {
       - group: '*'
         kind: '*'
   EOF
-  depends_on = [ helm_release.argocd ]
+  depends_on = [helm_release.argocd]
 }
 
 # resource "kubectl_manifest" "argocd_project_jarvix" {
@@ -109,7 +109,7 @@ resource "kubectl_manifest" "argocd_project_addons" {
 # ArgoCD Repository - GitOps
 ################################################################################
 resource "kubectl_manifest" "argocd_repo_gitops" {
-  yaml_body = <<-EOF
+  yaml_body  = <<-EOF
     apiVersion: v1
     kind: Secret
     metadata:
@@ -131,7 +131,7 @@ resource "kubectl_manifest" "argocd_repo_gitops" {
 # ArgoCD Application - GitOps
 ################################################################################
 resource "kubectl_manifest" "argocd_app_gitops" {
-  yaml_body = <<-EOF
+  yaml_body  = <<-EOF
     apiVersion: argoproj.io/v1alpha1
     kind: Application
     metadata:

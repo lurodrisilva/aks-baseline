@@ -228,3 +228,32 @@ output "web_app_routing_identity" {
   description = "The `azurerm_kubernetes_cluster`'s `web_app_routing_identity` block, it's type is a list of object."
   value       = try(azurerm_kubernetes_cluster.main.web_app_routing[0].web_app_routing_identity, [])
 }
+
+################################################################################
+# Crossplane Outputs
+################################################################################
+
+output "crossplane_identity_client_id" {
+  description = "The Client ID (Application ID) of the Crossplane service principal"
+  value       = azuread_application.crossplane.client_id
+}
+
+output "crossplane_identity_principal_id" {
+  description = "The Object ID of the Crossplane service principal"
+  value       = azuread_service_principal.crossplane.object_id
+}
+
+output "crossplane_subscription_id" {
+  description = "The Azure Subscription ID used by Crossplane"
+  value       = data.azurerm_subscription.current.subscription_id
+}
+
+output "crossplane_tenant_id" {
+  description = "The Azure Tenant ID used by Crossplane"
+  value       = data.azurerm_client_config.current.tenant_id
+}
+
+output "crossplane_resource_group_name" {
+  description = "The name of the resource group containing Crossplane infrastructure"
+  value       = azurerm_resource_group.aks_control_plane.name
+}

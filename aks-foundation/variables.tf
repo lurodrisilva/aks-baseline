@@ -206,8 +206,8 @@ variable "agents_proximity_placement_group_id" {
 }
 
 variable "agents_size" {
-  type        = string
-  default     = "Standard_D2s_v3"
+  type    = string
+  default = "Standard_D2s_v3"
   #default     = "Standard_D2ps_v5" # ARM 64
   description = "The default virtual machine size for the Kubernetes agents. Changing this without specifying `var.temporary_name_for_rotation` forces a new resource to be created."
 }
@@ -600,6 +600,12 @@ variable "image_cleaner_interval_hours" {
 variable "interval_before_cluster_update" {
   type        = string
   default     = "30s"
+  description = "Interval before cluster kubernetes version update, defaults to `30s`. Set this variable to `null` would disable interval before cluster kubernetes version update."
+}
+
+variable "interval_before_crossplane_installation" {
+  type        = string
+  default     = "120s"
   description = "Interval before cluster kubernetes version update, defaults to `30s`. Set this variable to `null` would disable interval before cluster kubernetes version update."
 }
 
@@ -1564,6 +1570,34 @@ variable "workload_identity_enabled" {
   type        = bool
   default     = true
   description = "Enable or Disable Workload Identity. Defaults to false."
+}
+
+################################################################################
+# Crossplane Variables
+################################################################################
+
+variable "crossplane_version" {
+  type        = string
+  default     = "2.1.3"
+  description = "Version of Crossplane to install"
+}
+
+variable "crossplane_provider_family_azure_version" {
+  type        = string
+  default     = "v2.3.0"
+  description = "Version of provider-family-azure to install"
+}
+
+variable "crossplane_provider_azure_cache_version" {
+  type        = string
+  default     = "v2.3.0"
+  description = "Version of provider-azure-cache to install"
+}
+
+variable "subscription_id" {
+  type        = string
+  default     = null
+  description = "Azure subscription ID (can also be set via ARM_SUBSCRIPTION_ID environment variable)"
 }
 
 variable "upgrade_override" {

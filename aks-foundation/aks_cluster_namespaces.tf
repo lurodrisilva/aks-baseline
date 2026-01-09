@@ -10,6 +10,7 @@ locals {
     storage       = "storage-system"
     ai            = "ai-system"
     control_plane = "control-plane-system"
+    resources     = "resources-system"
   }
 }
 
@@ -19,12 +20,15 @@ resource "kubernetes_namespace" "namespaces" {
 
   metadata {
     name = each.value
+    labels = each.key == "resources" ? {
+      "azure.workload.identity/use" = "true"
+    } : null
     # annotations = {
     #   "downscaler/uptime" = "Mon-Fri 9:00-18:00 America/Sao_Paulo"
     # }
   }
 
-  depends_on = [ azurerm_kubernetes_cluster.main ]
+  depends_on = [azurerm_kubernetes_cluster.main]
 
   # lifecycle {
   #   ignore_changes = [

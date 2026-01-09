@@ -566,10 +566,12 @@ resource "azurerm_kubernetes_cluster" "main" {
   ]
 
   lifecycle {
+    prevent_destroy = false
     ignore_changes = [
       http_application_routing_enabled,
       http_proxy_config[0].no_proxy,
       kubernetes_version,
+      default_node_pool[0].orchestrator_version,
       # we might have a random suffix in cluster's name so we have to ignore it here, but we've traced user supplied cluster name by `null_resource.kubernetes_cluster_name_keeper` so when the name is changed we'll recreate this resource.
       name,
     ]
@@ -671,11 +673,11 @@ resource "azurerm_kubernetes_cluster" "main" {
 }
 
 terraform {
-    backend "azurerm" {
+  backend "azurerm" {
     # address = "tfstate-aks-${local.cluster_name}.blob.core.windows.net"
-    container_name = "tfstate"
-    key = "aks.aks-test.terraform.tfstate"
-    resource_group_name = "tf-state-rg"
+    container_name       = "tfstate"
+    key                  = "aks.aks-test.terraform.tfstate"
+    resource_group_name  = "tf-state-rg"
     storage_account_name = "tfstateakstest"
   }
 }
