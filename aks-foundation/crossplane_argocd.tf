@@ -97,34 +97,13 @@ spec:
   ]
 }
 
-# Wait for the ArgoCD Application (crossplane) to be Synced and Healthy before proceeding
-resource "null_resource" "wait_for_crossplane_argocd_sync" {
+# Terraform-native wait (no shell): pause after ArgoCD app creation to allow sync
+resource "time_sleep" "wait_for_crossplane_argocd_sync" {
+  create_duration = "${var.argocd_app_wait_timeout_seconds}s"
+
   depends_on = [
     kubectl_manifest.argocd_app_crossplane
   ]
-
-  provisioner "local-exec" {
-    interpreter = ["/bin/sh", "-c"]
-    command = <<-EOT
-      set -e
-      NS="${local.namespaces.devops}"
-      APP="crossplane"
-      INTERVAL=${var.argocd_app_wait_interval_seconds}
-      TIMEOUT=${var.argocd_app_wait_timeout_seconds}
-      ATTEMPTS=$(( TIMEOUT / INTERVAL ))
-      for i in $(seq 1 ${ATTEMPTS}); do
-        status=$(kubectl get application ${APP} -n ${NS} -o jsonpath='{.status.sync.status}' 2>/dev/null || true)
-        health=$(kubectl get application ${APP} -n ${NS} -o jsonpath='{.status.health.status}' 2>/dev/null || true)
-        if [ "$status" = "Synced" ] && [ "$health" = "Healthy" ]; then
-          echo "ArgoCD Application ${APP} is Synced/Healthy"
-          exit 0
-        fi
-        sleep ${INTERVAL}
-      done
-      echo "Timed out waiting for ArgoCD Application ${APP} to be Synced/Healthy after ${TIMEOUT}s" >&2
-      exit 1
-    EOT
-  }
 }
 
 resource "time_sleep" "interval_before_crossplane_installation" {
@@ -134,7 +113,7 @@ resource "time_sleep" "interval_before_crossplane_installation" {
   depends_on = [
     azurerm_kubernetes_cluster.main,
     kubectl_manifest.argocd_app_crossplane,
-    null_resource.wait_for_crossplane_argocd_sync
+    time_sleep.wait_for_crossplane_argocd_sync
   ]
 }
 

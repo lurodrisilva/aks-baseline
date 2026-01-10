@@ -4,35 +4,37 @@
 ################################################################################
 
 # Ensure ASO namespace exists before creating credentials Secret
-resource "kubernetes_namespace" "aso_namespace" {
-  metadata {
-    name = "azureserviceoperator-system"
-  }
+# resource "kubernetes_namespace" "aso_namespace" {
+#   metadata {
+#     name = "azureserviceoperator-system"
+#   }
 
-  depends_on = [
-    azurerm_kubernetes_cluster.main
-  ]
-}
+#   depends_on = [
+#     azurerm_kubernetes_cluster.main
+#   ]
+# }
 
 # Controller credential Secret consumed by ASO
 # Keys as per ASO docs: AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
 resource "kubernetes_secret" "aso_controller_settings" {
   metadata {
     name      = "aso-controller-settings"
-    namespace = kubernetes_namespace.aso_namespace.metadata[0].name
+    # namespace = kubernetes_namespace.aso_namespace.metadata[0].name
+    namespace = local.namespaces.resources
   }
 
   data = {
-    AZURE_SUBSCRIPTION_ID   = data.azurerm_subscription.current.subscription_id
-    AZURE_TENANT_ID         = data.azurerm_client_config.current.tenant_id
-    AZURE_CLIENT_ID         = azuread_application.crossplane.client_id
-    USE_WORKLOAD_IDENTITY_AUTH = "true"
+    AZURE_SUBSCRIPTION_ID = data.azurerm_subscription.current.subscription_id
+    AZURE_TENANT_ID       = data.azurerm_client_config.current.tenant_id
+    AZURE_CLIENT_ID       = azuread_application.crossplane.client_id
+    AZURE_CLIENT_SECRET   = azuread_application_password.crossplane.value
   }
 
   type = "Opaque"
 
   depends_on = [
-    kubernetes_namespace.aso_namespace
+    local.namespaces,
+    azuread_application_password.crossplane
   ]
 }
 
@@ -53,22 +55,12 @@ spec:
     chart: azure-service-operator
     targetRevision: v2.17.0
     helm:
-      values: |
-        useWorkloadIdentityAuth: true
-        azureSubscriptionID: "${data.azurerm_subscription.current.subscription_id}"
-        azureTenantID: "${data.azurerm_client_config.current.tenant_id}"
-        azureClientID: "${azuread_application.crossplane.client_id}"
-        crdPattern: "resources.azure.com/*;keyvault.azure.com/*;managedidentity.azure.com/*;containerservice.azure.com/*"
-        serviceAccount:
-          create: true
-          name: azureserviceoperator-default
-          annotations:
-            azure.workload.identity/client-id: "${azuread_application.crossplane.client_id}"
-        podLabels:
-          azure.workload.identity/use: "true"
+      parameters:
+        - name: crdPattern
+          value: "resources.azure.com/*;keyvault.azure.com/*;managedidentity.azure.com/*;containerservice.azure.com/*"
   destination:
     server: https://kubernetes.default.svc
-    namespace: azureserviceoperator-system
+    namespace: ${local.namespaces.resources}
   syncPolicy:
     automated:
       prune: true
@@ -85,9 +77,8 @@ spec:
   YAML
 
   depends_on = [
-    kubernetes_namespace.aso_namespace,
+    local.namespaces,
     kubernetes_secret.aso_controller_settings,
-    azuread_application_federated_identity_credential.aso_controller,
     helm_release.argocd,
     kubectl_manifest.argocd_project_addons,
     kubectl_manifest.argocd_repo_gitops

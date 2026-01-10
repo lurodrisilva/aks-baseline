@@ -1584,7 +1584,7 @@ variable "argocd_app_wait_interval_seconds" {
 
 variable "argocd_app_wait_timeout_seconds" {
   type        = number
-  default     = 600
+  default     = 300
   description = "Maximum seconds to wait for the ArgoCD app to become Synced/Healthy."
 }
 

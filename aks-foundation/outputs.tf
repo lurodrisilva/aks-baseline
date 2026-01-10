@@ -252,8 +252,3 @@ output "crossplane_tenant_id" {
   description = "The Azure Tenant ID used by Crossplane"
   value       = data.azurerm_client_config.current.tenant_id
 }
-
-output "crossplane_resource_group_name" {
-  description = "The name of the resource group containing Crossplane infrastructure"
-  value       = azurerm_resource_group.aks_control_plane.name
-}
