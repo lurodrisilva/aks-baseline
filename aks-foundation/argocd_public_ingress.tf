@@ -8,7 +8,7 @@ resource "azurerm_public_ip" "argocd" {
   location            = var.location
   allocation_method   = "Static"
   sku                 = "Standard"
-  domain_name_label   = "luciano-argocd"
+  domain_name_label   = var.argocd_domain_name_label
 
   tags = merge(
     var.tags,

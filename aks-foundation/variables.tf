@@ -10,6 +10,12 @@ variable "resource_group_name" {
   description = "The existing resource group name to use"
 }
 
+variable "argocd_domain_name_label" {
+  type        = string
+  default     = "luciano-argocd"
+  description = "The DNS label for ArgoCD public IP. Creates FQDN: {domain_name_label}.{location}.cloudapp.azure.com"
+}
+
 variable "aci_connector_linux_enabled" {
   type        = bool
   default     = false

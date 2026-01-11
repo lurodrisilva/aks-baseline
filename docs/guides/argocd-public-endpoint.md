@@ -15,8 +15,8 @@ The configuration creates:
 
 - **Resource Name**: `azurerm_public_ip.argocd`
 - **Public IP Name**: `argocd-public-ip`
-- **DNS Label**: `luciano-argocd`
-- **FQDN**: `luciano-argocd.eastus.cloudapp.azure.com`
+- **DNS Label**: Configurable via `var.argocd_domain_name_label` (default: `luciano-argocd`)
+- **FQDN**: `{domain_name_label}.{location}.cloudapp.azure.com`
 - **Allocation**: Static
 - **SKU**: Standard
 - **Resource Group**: AKS node resource group (auto-generated)
@@ -41,7 +41,7 @@ After applying the Terraform configuration:
    ```
 
 2. **Access ArgoCD**:
-   - URL: `http://luciano-argocd.eastus.cloudapp.azure.com`
+   - URL: `https://luciano-argocd.eastus.cloudapp.azure.com`
    - Or use the output: `terraform output argocd_url`
 
 3. **Get the admin password**:
@@ -60,6 +60,25 @@ The following outputs are available after applying the configuration:
 - `argocd_public_ip`: The static public IP address
 - `argocd_public_fqdn`: The fully qualified domain name
 - `argocd_url`: The complete HTTP URL to access ArgoCD
+
+## Configuration
+
+### Custom Domain Name Label
+
+To customize the ArgoCD DNS name, set the variable in your `terraform.tfvars`:
+
+```hcl
+argocd_domain_name_label = "my-argocd"
+```
+
+This will create the FQDN: `my-argocd.eastus.cloudapp.azure.com`
+
+### Variable Reference
+
+- **Variable**: `argocd_domain_name_label`
+- **Type**: `string`
+- **Default**: `luciano-argocd`
+- **Description**: DNS label for ArgoCD public IP
 
 ## Important Notes
 
