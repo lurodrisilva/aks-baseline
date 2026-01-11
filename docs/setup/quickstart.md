@@ -176,9 +176,9 @@ kubernetes_version = "1.34"
 
 ## Next Steps
 
-1. Review the full documentation: [CROSSPLANE_IMPLEMENTATION_SUMMARY.md](CROSSPLANE_IMPLEMENTATION_SUMMARY.md)
-2. Read troubleshooting guide: [aks-foundation/CROSSPLANE_README.md](aks-foundation/CROSSPLANE_README.md)
-3. Learn about Crossplane: [CROSSPLANE_AZURE_WORKLOAD_IDENTITY.md](CROSSPLANE_AZURE_WORKLOAD_IDENTITY.md)
+1. Review the full documentation: [Crossplane Implementation Summary](../architecture/crossplane-implementation-summary.md)
+2. Read troubleshooting guide: [Crossplane README](../reference/crossplane-readme.md)
+3. Learn about Crossplane: [Crossplane Azure Workload Identity](../architecture/crossplane-azure-workload-identity.md)
 4. Create your first Composition
 5. Explore more Azure providers
 

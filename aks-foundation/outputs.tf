@@ -252,3 +252,22 @@ output "crossplane_tenant_id" {
   description = "The Azure Tenant ID used by Crossplane"
   value       = data.azurerm_client_config.current.tenant_id
 }
+
+################################################################################
+# ArgoCD Public Endpoint Outputs
+################################################################################
+
+output "argocd_public_ip" {
+  description = "The public IP address for ArgoCD"
+  value       = azurerm_public_ip.argocd.ip_address
+}
+
+output "argocd_public_fqdn" {
+  description = "The FQDN for ArgoCD public access"
+  value       = azurerm_public_ip.argocd.fqdn
+}
+
+output "argocd_url" {
+  description = "The URL to access ArgoCD"
+  value       = "http://${azurerm_public_ip.argocd.fqdn}"
+}
