@@ -605,7 +605,7 @@ variable "image_cleaner_interval_hours" {
 
 variable "interval_before_cluster_update" {
   type        = string
-  default     = "30s"
+  default     = "120s"
   description = "Interval before cluster kubernetes version update, defaults to `30s`. Set this variable to `null` would disable interval before cluster kubernetes version update."
 }
 
