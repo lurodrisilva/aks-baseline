@@ -58,7 +58,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: crossplane
-  namespace: ${local.namespaces.devops}
+  namespace: ${local.namespaces.control_plane}
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

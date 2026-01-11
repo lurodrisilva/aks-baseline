@@ -47,7 +47,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: azure-service-operator
-  namespace: ${local.namespaces.devops}
+  namespace: ${local.namespaces.control_plane}
 spec:
   project: addons-project
   source:
