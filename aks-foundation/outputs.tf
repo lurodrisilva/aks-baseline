@@ -305,3 +305,37 @@ output "private_dns_zone_names_map" {
   description = "Map of Private DNS Zone keys to their names"
   value       = { for k, v in azurerm_private_dns_zone.zones : k => v.name }
 }
+
+################################################################################
+# External Secrets Operator (ESO)
+################################################################################
+
+output "external_secrets_uami_client_id" {
+  description = "Client ID of the UAMI federated to the ESO ServiceAccount. Paste into 00-baseline-addons base_chart values: external_secrets.azure.workload_identity_client_id"
+  value       = try(azurerm_user_assigned_identity.eso[0].client_id, null)
+}
+
+output "external_secrets_uami_principal_id" {
+  description = "Principal (object) ID of the UAMI federated to the ESO ServiceAccount."
+  value       = try(azurerm_user_assigned_identity.eso[0].principal_id, null)
+}
+
+output "external_secrets_keyvault_name" {
+  description = "Name of the demo Key Vault provisioned for the ESO smoke test."
+  value       = try(azurerm_key_vault.eso_demo[0].name, null)
+}
+
+output "external_secrets_keyvault_uri" {
+  description = "Vault URI of the demo Key Vault. Paste into 00-baseline-addons base_chart values: external_secrets.azure.keyvault_uri"
+  value       = try(azurerm_key_vault.eso_demo[0].vault_uri, null)
+}
+
+output "external_secrets_tenant_id" {
+  description = "Entra tenant ID for the ClusterSecretStore. Paste into 00-baseline-addons base_chart values: external_secrets.azure.tenant_id"
+  value       = var.external_secrets_enabled ? data.azurerm_client_config.current.tenant_id : null
+}
+
+output "external_secrets_serviceaccount_subject" {
+  description = "Federated credential subject — system:serviceaccount:<ns>:<sa>. Informational; matches the addon Helm chart."
+  value       = var.external_secrets_enabled ? local.external_secrets_federated_subject : null
+}

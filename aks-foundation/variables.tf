@@ -1680,3 +1680,37 @@ variable "private_dns_zone_names" {
   default     = ["privatelink.redis.cache.windows.net", "privatelink.vaultcore.azure.net", "privatelink.blob.core.windows.net"]
   description = "Set of Private DNS Zone names to create and link to the AKS VNet. Each Azure service type requires its own zone with an exact name (e.g. privatelink.redis.cache.windows.net). DNS records for private endpoints are created by private_dns_zone_group on azurerm_private_endpoint resources — not by auto-registration."
 }
+
+################################################################################
+# External Secrets Operator (ESO)
+################################################################################
+
+variable "external_secrets_enabled" {
+  type        = bool
+  default     = true
+  description = "Provision the Azure-side glue for the External Secrets Operator: UAMI, federated identity credential, demo Key Vault and demo secret. Set to false if you do not want ESO in this cluster."
+}
+
+variable "external_secrets_namespace" {
+  type        = string
+  default     = "control-plane-system"
+  description = "Kubernetes namespace where the ESO ServiceAccount lives. Must match the federated credential subject and the addon Helm chart in 00-baseline-addons."
+}
+
+variable "external_secrets_sa_name" {
+  type        = string
+  default     = "external-secrets"
+  description = "Kubernetes ServiceAccount name used by the ESO controller. Must match the federated credential subject and the addon Helm chart in 00-baseline-addons."
+}
+
+variable "external_secrets_keyvault_name" {
+  type        = string
+  default     = null
+  description = "Optional override for the demo Key Vault name. Must be globally unique, 3-24 chars, alphanumeric + hyphens, start with a letter. If null a deterministic name is derived from the tenant + resource group + workspace."
+}
+
+variable "external_secrets_seed_demo_secret" {
+  type        = bool
+  default     = true
+  description = "Provision the demo Key Vault, the demo secret eso-demo-secret, and the Key Vault Secrets Officer role on the Terraform principal. Set to false for production deployments — keep the UAMI + federated credential, but skip the demo KV and have operators seed real secrets out-of-band."
+}
