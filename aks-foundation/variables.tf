@@ -1,7 +1,7 @@
 variable "location" {
   type = string
   #default     = "westus2"
-  default     = "brazilsouth"
+  default     = "westus2"
   description = "Location of cluster, if not defined it will be read from the resource-group"
 }
 
@@ -13,7 +13,7 @@ variable "resource_group_name" {
 
 variable "argocd_domain_name_label" {
   type        = string
-  default     = "luciano-argocd"
+  default     = "luciano-argocd-v2"
   description = "The DNS label for ArgoCD public IP. Creates FQDN: {domain_name_label}.{location}.cloudapp.azure.com"
 }
 
@@ -515,7 +515,7 @@ variable "ebpf_data_plane" {
 
 variable "auto_scaling_enabled" {
   type        = bool
-  default     = false
+  default     = true
   description = "Enable node pool autoscaling"
 }
 

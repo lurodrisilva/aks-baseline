@@ -1,4 +1,4 @@
-<!-- Generated: 2026-04-24 | Updated: 2026-04-24 -->
+<!-- Generated: 2026-04-24 | Updated: 2026-05-10 -->
 
 # 03-plat-eng-aks-foundation
 

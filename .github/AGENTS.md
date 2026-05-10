@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-04-24 | Updated: 2026-04-24 -->
+<!-- Generated: 2026-04-24 | Updated: 2026-05-10 -->
 
 # .github
 
@@ -15,8 +15,8 @@ GitHub repository configuration: CI workflows, dependabot, issue and PR template
 ## Subdirectories
 | Directory | Purpose |
 |-----------|---------|
-| `workflows/` | GitHub Actions workflows: `acc-test.yaml` (acceptance tests), `breaking-change-detect.yaml`, `pr-check.yaml`, `weekly-codeql.yaml` |
-| `ISSUE_TEMPLATE/` | `Bug_Report.yml`, `Feature_Request.yml`, `config.yml` |
+| `workflows/` | GitHub Actions workflows: `acc-test.yaml`, `breaking-change-detect.yaml`, `pr-check.yaml`, `weekly-codeql.yaml` (see `workflows/AGENTS.md`) |
+| `ISSUE_TEMPLATE/` | Issue forms `Bug_Report.yml`, `Feature_Request.yml`, `config.yml` (see `ISSUE_TEMPLATE/AGENTS.md`) |
 
 ## For AI Agents
 

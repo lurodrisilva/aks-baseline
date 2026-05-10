@@ -678,7 +678,7 @@ terraform {
     container_name       = "tfstate"
     key                  = "aks.aks-test.terraform.tfstate"
     resource_group_name  = "tf-state-rg"
-    storage_account_name = "tfstateakstest2"
+    storage_account_name = "tfstateakstest"
     use_azuread_auth     = true
   }
 }
