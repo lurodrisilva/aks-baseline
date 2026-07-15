@@ -32,6 +32,29 @@ resource "azurerm_subnet" "private_endpoints" {
   private_endpoint_network_policies = "Disabled"
 }
 
+# Delegated subnet for VNet-integrated (private access) Azure PostgreSQL
+# Flexible Server — the SQL building block's azure-flexibleserver engine
+# (ADR-0010). Must be dedicated: a subnet with a flexibleServers delegation
+# cannot host anything else. The Crossplane PostgresInstance Composition
+# consumes this subnet's ID (via the EnvironmentConfig) as
+# spec.forProvider.delegatedSubnetId.
+resource "azurerm_subnet" "postgres" {
+  count = var.postgres_flexibleserver_enabled ? 1 : 0
+
+  name                 = var.postgres_subnet_name
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.aks.name
+  address_prefixes     = var.postgres_subnet_prefix
+
+  delegation {
+    name = "flexibleServers"
+    service_delegation {
+      name    = "Microsoft.DBforPostgreSQL/flexibleServers"
+      actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+    }
+  }
+}
+
 ################################################################################
 # Role Assignment - Network Contributor on aks-nodes subnet
 #
