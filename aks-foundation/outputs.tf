@@ -307,6 +307,20 @@ output "private_dns_zone_names_map" {
 }
 
 ################################################################################
+# PostgreSQL Flexible Server networking (ADR-0010)
+################################################################################
+
+output "postgres_flexibleserver_subnet_id" {
+  description = "The ID of the PostgreSQL Flexible Server delegated subnet. ADR-0010: feed into the Crossplane EnvironmentConfig consumed by the control-plane PostgresInstance Composition as spec.forProvider.delegatedSubnetId."
+  value       = try(azurerm_subnet.postgres[0].id, null)
+}
+
+output "postgres_flexibleserver_private_dns_zone_id" {
+  description = "The ID of the privatelink.postgres.database.azure.com private DNS zone. ADR-0010: feed into the Crossplane EnvironmentConfig as spec.forProvider.privateDnsZoneId."
+  value       = try(azurerm_private_dns_zone.zones["privatelink.postgres.database.azure.com"].id, null)
+}
+
+################################################################################
 # External Secrets Operator (ESO)
 ################################################################################
 

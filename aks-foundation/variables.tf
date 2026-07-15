@@ -1675,9 +1675,27 @@ variable "private_endpoints_subnet_prefix" {
   description = "Address prefixes for the private endpoints subnet. Private endpoint network policies are disabled on this subnet."
 }
 
+variable "postgres_flexibleserver_enabled" {
+  type        = bool
+  default     = true
+  description = "Provision the Azure networking prerequisite for the SQL building block's Azure PostgreSQL Flexible Server engine (ADR-0010): a delegated subnet for VNet-integrated Flexible Servers. The privatelink.postgres.database.azure.com private DNS zone is created via private_dns_zone_names. Set to false to omit the delegated subnet."
+}
+
+variable "postgres_subnet_name" {
+  type        = string
+  default     = "postgres-flexibleserver-subnet"
+  description = "Name of the delegated subnet for Azure PostgreSQL Flexible Server VNet integration."
+}
+
+variable "postgres_subnet_prefix" {
+  type        = list(string)
+  default     = ["10.0.5.0/24"]
+  description = "Address prefixes for the PostgreSQL Flexible Server delegated subnet. Must be dedicated (delegation Microsoft.DBforPostgreSQL/flexibleServers) and not shared with other resources. Next free /24 after the private endpoints subnet (10.0.4.0/24)."
+}
+
 variable "private_dns_zone_names" {
   type        = set(string)
-  default     = ["privatelink.redis.cache.windows.net", "privatelink.vaultcore.azure.net", "privatelink.blob.core.windows.net"]
+  default     = ["privatelink.redis.cache.windows.net", "privatelink.vaultcore.azure.net", "privatelink.blob.core.windows.net", "privatelink.postgres.database.azure.com"]
   description = "Set of Private DNS Zone names to create and link to the AKS VNet. Each Azure service type requires its own zone with an exact name (e.g. privatelink.redis.cache.windows.net). DNS records for private endpoints are created by private_dns_zone_group on azurerm_private_endpoint resources — not by auto-registration."
 }
 
