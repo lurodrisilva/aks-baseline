@@ -399,6 +399,6 @@ output "documentdb_private_dns_zone_id" {
 ################################################################################
 
 output "redis_private_dns_zone_id" {
-  description = "ID of the privatelink.redis.cache.windows.net zone. ADR-0013: feed into the Crossplane EnvironmentConfig for the RedisInstance private-endpoint DNS zone group."
-  value       = try(azurerm_private_dns_zone.zones["privatelink.redis.cache.windows.net"].id, null)
+  description = "ID of the privatelink.redis.azure.net zone, backing Azure Managed Redis (Microsoft.Cache/redisEnterprise) private endpoints. ADR-0013/ADR-0019: feed into the Crossplane EnvironmentConfig for the RedisInstance private-endpoint DNS zone group. This is deliberately not privatelink.redis.cache.windows.net: that zone serves Azure Cache for Redis, which is retired and rejects new instances."
+  value       = try(azurerm_private_dns_zone.zones["privatelink.redis.azure.net"].id, null)
 }

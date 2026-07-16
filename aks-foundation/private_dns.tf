@@ -3,9 +3,15 @@
 #
 # One zone per Azure service type. Each zone name must exactly match Azure's
 # required format for the CNAME chain to resolve correctly:
-#   e.g. privatelink.redis.cache.windows.net
+#   e.g. privatelink.redis.azure.net
 #        privatelink.vaultcore.azure.net
 #        privatelink.blob.core.windows.net
+#
+#   The name is per-service and unforgiving. Azure Managed Redis
+#   (Microsoft.Cache/redisEnterprise) uses privatelink.redis.azure.net; the
+#   similar-looking privatelink.redis.cache.windows.net belongs to Azure Cache
+#   for Redis, a different and now-retired service. A zone group pointed at the
+#   wrong zone still applies cleanly and still resolves to nothing.
 #
 # HOW DNS RECORDS ARE CREATED:
 #   DNS records for private endpoints are NOT created by auto-registration.
