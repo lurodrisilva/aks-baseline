@@ -69,6 +69,25 @@ spec:
     chart: crossplane
     helm:
       releaseName: crossplane
+      # Safe Start. The chart defaults provider.defaultActivations to ["*"], which makes the
+      # init container run `crossplane core init --activation "*"` and create a `default`
+      # ManagedResourceActivationPolicy activating every managed resource a provider ships.
+      #
+      # That is not survivable here. Installing provider-azure-network under the wildcard
+      # activated ~238 resource definitions at once and took this cluster's API server offline
+      # for roughly 15 minutes (SKU is Free, so the control plane is capped and has no SLA):
+      # discovery returned ServiceUnavailable and every provider flapped Installed=False.
+      #
+      # Emptying it drops the flag entirely, so no wildcard policy is created and MRDs keep
+      # their Inactive default. plat-eng-control-plane then activates only the handful of
+      # resources its Compositions actually compose. Activation policies are additive, so this
+      # must be empty for that narrow policy to mean anything.
+      #
+      # Use values, not parameters: `--set provider.defaultActivations={}` renders
+      # `--activation ""` (an empty-string activation) rather than removing the flag.
+      values: |
+        provider:
+          defaultActivations: []
   destination:
     server: https://kubernetes.default.svc
     namespace: ${local.namespaces.resources}
