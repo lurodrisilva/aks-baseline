@@ -353,3 +353,52 @@ output "external_secrets_serviceaccount_subject" {
   description = "Federated credential subject — system:serviceaccount:<ns>:<sa>. Informational; matches the addon Helm chart."
   value       = var.external_secrets_enabled ? local.external_secrets_federated_subject : null
 }
+
+################################################################################
+# Azure Container Registry (ADR-0014)
+################################################################################
+
+output "acr_login_server" {
+  description = "Login server of the platform ACR (ADR-0014). CI pushes image + umbrella here; the kubelet identity has AcrPull. Null when acr_enabled = false."
+  value       = try(azurerm_container_registry.platform[0].login_server, null)
+}
+
+output "acr_id" {
+  description = "Resource ID of the platform ACR."
+  value       = try(azurerm_container_registry.platform[0].id, null)
+}
+
+################################################################################
+# Azure DocumentDB — platform orchestrator store (ADR-0017)
+################################################################################
+
+output "documentdb_id" {
+  description = "Resource ID of the Azure DocumentDB (mongoCluster) platform store. Null when documentdb_enabled = false."
+  value       = try(azurerm_mongo_cluster.platform[0].id, null)
+}
+
+output "documentdb_host" {
+  description = "Private FQDN of the DocumentDB cluster (<name>.mongocluster.cosmos.azure.com); resolves to the private-endpoint IP via the privatelink zone."
+  value       = local.documentdb_host
+}
+
+output "documentdb_connection_secret_name" {
+  description = "Key Vault secret name holding the orchestrator's mongodb+srv connection string; ESO syncs it into the cluster (ADR-0017). Null unless the ESO demo Key Vault exists."
+  value       = try(azurerm_key_vault_secret.documentdb_connection[0].name, null)
+}
+
+output "documentdb_private_dns_zone_id" {
+  description = "ID of the privatelink.mongocluster.cosmos.azure.com zone backing the DocumentDB private endpoint."
+  value       = try(azurerm_private_dns_zone.zones["privatelink.mongocluster.cosmos.azure.com"].id, null)
+}
+
+################################################################################
+# Crossplane EnvironmentConfig inputs (consumed by Phase B / control-plane)
+# ADR-0013 (redis). Postgres subnet/zone + private_endpoints_subnet_id are
+# already exported above.
+################################################################################
+
+output "redis_private_dns_zone_id" {
+  description = "ID of the privatelink.redis.cache.windows.net zone. ADR-0013: feed into the Crossplane EnvironmentConfig for the RedisInstance private-endpoint DNS zone group."
+  value       = try(azurerm_private_dns_zone.zones["privatelink.redis.cache.windows.net"].id, null)
+}
