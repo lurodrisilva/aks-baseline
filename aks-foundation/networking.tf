@@ -46,6 +46,28 @@ resource "azurerm_subnet" "postgres" {
   virtual_network_name = azurerm_virtual_network.aks.name
   address_prefixes     = var.postgres_subnet_prefix
 
+  # Declared because Azure adds it, not because we want it here.
+  #
+  # "The Microsoft.Storage service endpoint is automatically configured on the
+  # delegated subnet when the first server is provisioned in that subnet. This
+  # configuration ensures reliable routing of traffic to the Azure Storage
+  # accounts used for uploading Write-Ahead Log (WAL) files. Removing this
+  # endpoint may disrupt connectivity and can lead to unintended consequences
+  # for core service operations."
+  #   -- https://learn.microsoft.com/azure/postgresql/network/concepts-networking-private
+  #
+  # Leaving it out of the config does not keep it off the subnet — it only makes
+  # Terraform plan to REMOVE what the service added. That plan is not cosmetic:
+  # applying it strips WAL archival routing from a live Flexible Server. Observed
+  # on aks-test 2026-07-16 as a permanent `~ update in-place` that reappeared on
+  # every plan once orders-db existed.
+  #
+  # Declaring it makes Terraform and Azure agree, and is idempotent on a fresh
+  # apply: the subnet is created with the endpoint the service would add anyway.
+  # Deliberately NOT `lifecycle { ignore_changes = [service_endpoints] }` — that
+  # would also mask a real, unintended endpoint change here.
+  service_endpoints = ["Microsoft.Storage"]
+
   delegation {
     name = "flexibleServers"
     service_delegation {
