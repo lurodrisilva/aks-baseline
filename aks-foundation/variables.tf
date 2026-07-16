@@ -1695,8 +1695,8 @@ variable "postgres_subnet_prefix" {
 
 variable "private_dns_zone_names" {
   type        = set(string)
-  default     = ["privatelink.redis.cache.windows.net", "privatelink.vaultcore.azure.net", "privatelink.blob.core.windows.net", "privatelink.postgres.database.azure.com", "privatelink.mongocluster.cosmos.azure.com"]
-  description = "Set of Private DNS Zone names to create and link to the AKS VNet. Each Azure service type requires its own zone with an exact name (e.g. privatelink.redis.cache.windows.net, privatelink.mongocluster.cosmos.azure.com for Azure DocumentDB). DNS records for private endpoints are created by private_dns_zone_group on azurerm_private_endpoint resources — not by auto-registration."
+  default     = ["privatelink.redis.azure.net", "privatelink.vaultcore.azure.net", "privatelink.blob.core.windows.net", "privatelink.postgres.database.azure.com", "privatelink.mongocluster.cosmos.azure.com"]
+  description = "Set of Private DNS Zone names to create and link to the AKS VNet. Each Azure service type requires its own zone with an exact name (e.g. privatelink.redis.azure.net for Azure Managed Redis, privatelink.mongocluster.cosmos.azure.com for Azure DocumentDB). The cache zone is privatelink.redis.azure.net (Azure Managed Redis, Microsoft.Cache/redisEnterprise), NOT privatelink.redis.cache.windows.net — that zone belongs to Azure Cache for Redis, which is retired and refuses new instances. DNS records for private endpoints are created by private_dns_zone_group on azurerm_private_endpoint resources — not by auto-registration."
 }
 
 ################################################################################
