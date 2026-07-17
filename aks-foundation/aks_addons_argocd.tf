@@ -44,6 +44,67 @@ resource "helm_release" "argocd" {
         resource.compareoptions: |
           ignoreResourceStatusField: all
           ignoreDifferencesOnResourceUpdates: true
+        # Health assessment for the platform's Crossplane composite resources.
+        #
+        # WHY THIS EXISTS: ArgoCD ships no health check for a custom group, and
+        # it defaults unassessable kinds to Healthy. Without this, a
+        # PostgresInstance that has not begun provisioning reports Healthy the
+        # instant it is created, the infra sync-wave clears immediately, and the
+        # app's migration wave runs against an Azure Flexible Server that will
+        # not exist for another 5-10 minutes. The wave gate looks like it works
+        # and does nothing.
+        #
+        # The wildcard covers PostgresInstance and RedisInstance both — every
+        # Crossplane XR carries the same Ready/Synced condition contract, so one
+        # script serves the whole group. Wildcards only work under the
+        # `resource.customizations` key; the resource.customizations.health.
+        # <group>_<kind> form does NOT support them.
+        resource.customizations: |
+          platform.myorg.io/*:
+            health.lua: |
+              local hs = {}
+              hs.status = "Progressing"
+              hs.message = "Waiting for the control plane to report status"
+
+              if obj.status == nil or obj.status.conditions == nil then
+                -- Freshly created: Crossplane has not written conditions yet.
+                return hs
+              end
+
+              -- Synced=False means the Composition itself failed to reconcile
+              -- (bad ProviderConfig, invalid spec, provider not installed).
+              -- That is a real failure, not slow provisioning, so surface it
+              -- rather than letting the wave hang until it times out.
+              for _, c in ipairs(obj.status.conditions) do
+                if c.type == "Synced" and c.status == "False" then
+                  hs.status = "Degraded"
+                  hs.message = c.reason or "ReconcileError"
+                  if c.message ~= nil then
+                    hs.message = hs.message .. ": " .. c.message
+                  end
+                  return hs
+                end
+              end
+
+              -- Ready=True is Crossplane's statement that every composed
+              -- resource is ready. For PostgresInstance that includes the
+              -- composed connection Secret, which is patched from status.fqdn
+              -- with policy Required — so it only exists once the server has a
+              -- private FQDN. Ready therefore implies the host is knowable.
+              for _, c in ipairs(obj.status.conditions) do
+                if c.type == "Ready" then
+                  if c.status == "True" then
+                    hs.status = "Healthy"
+                    hs.message = "Composed resources are ready"
+                  else
+                    hs.status = "Progressing"
+                    hs.message = c.reason or "Creating"
+                  end
+                  return hs
+                end
+              end
+
+              return hs
       params:
         application.namespaces: "*"  # Adding namespaces to be managed by ArgoCD
 
