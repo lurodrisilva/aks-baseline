@@ -28,6 +28,21 @@ resource "helm_release" "argocd" {
       autoscaling:
         enabled: true
         minReplicas: 2
+%{if local.acr_argocd_pull_active~}
+      # ADR-0021 gate 2: pull OCI Helm charts from the platform ACR with Azure
+      # Workload Identity — the repo Secret below sets useAzureWorkloadIdentity
+      # and the repo-server exchanges the projected token for an ACR pull token.
+      # No registry credential is stored. Dormant until a chart is sourced from
+      # ACR (Phase E); harmless while the umbrella is served from GHCR.
+      serviceAccount:
+        annotations:
+          azure.workload.identity/client-id: "${try(azurerm_user_assigned_identity.acr_argocd_pull[0].client_id, "")}"
+      podLabels:
+        azure.workload.identity/use: "true"
+      env:
+        - name: AZURE_ARM_TOKEN_RESOURCE
+          value: "https://containerregistry.azure.net"
+%{endif~}
 
     applicationSet:
       replicas: 0
@@ -184,6 +199,39 @@ resource "kubectl_manifest" "argocd_repo_addons" {
     stringData:
       type: git
       url: https://github.com/lurodrisilva/plat-eng-baseline-addons.git
+  EOF
+  depends_on = [helm_release.argocd]
+}
+
+################################################################################
+# ArgoCD Repository - platform ACR (OCI Helm charts) — ADR-0021 gate 2
+#
+# Registers the platform ACR as an OCI Helm repository authenticated by the
+# repo-server's Azure Workload Identity (uami-acr-argocd-pull, AcrPull) — no
+# stored credential. The umbrella (ADR-0008) is still published to and served
+# from GHCR today, so this repository holds no charts yet and ArgoCD does not
+# resolve against it until an Application sources a chart from ACR (Phase E).
+################################################################################
+resource "kubectl_manifest" "argocd_repo_acr_charts" {
+  count = local.acr_argocd_pull_active ? 1 : 0
+
+  yaml_body  = <<-EOF
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: repo-acr-platform-charts
+      namespace: ${local.namespaces.devops}
+      labels:
+        argocd.argoproj.io/secret-type: repository
+      annotations:
+        managed-by: argocd.argoproj.io
+    type: Opaque
+    stringData:
+      type: helm
+      name: acr-platform-charts
+      url: ${try(azurerm_container_registry.platform[0].login_server, "")}
+      enableOCI: "true"
+      useAzureWorkloadIdentity: "true"
   EOF
   depends_on = [helm_release.argocd]
 }
