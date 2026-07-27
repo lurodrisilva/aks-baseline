@@ -14,8 +14,12 @@
 #     managed-identity auth (acr.tf). privatelink.azurecr.io remains ADR-0014's
 #     recorded hardening fast-follow.
 #
-#   Gate 1  GitHub Actions (net-hexagonal) -> AcrPush, via a UAMI + a GitHub
-#           OIDC federated credential. No repo secret, no service principal.
+#   Gate 1  GitHub Actions -> AcrPush, via a UAMI + one GitHub OIDC federated
+#           credential per permitted subject. No repo secret, no service
+#           principal. Two subjects today: net-hexagonal (which still publishes
+#           to GHCR — the credential only makes ACR pushable) and
+#           plat-eng-developer-portal, which DOES push here (slice P4) and is
+#           the first real consumer of this gate.
 #   Gate 2  ArgoCD repo-server -> AcrPull, via a UAMI + a federated credential
 #           bound to the argocd-repo-server ServiceAccount (AKS OIDC issuer),
 #           consumed with useAzureWorkloadIdentity on the repo Secret
@@ -44,16 +48,38 @@ variable "acr_cicd_push_enabled" {
 }
 
 variable "acr_cicd_github_subjects" {
-  type    = set(string)
-  default = ["repo:lurodrisilva/net-hexagonal:ref:refs/heads/master"]
+  type = set(string)
+  default = [
+    "repo:lurodrisilva/net-hexagonal:ref:refs/heads/master",
+    "repo:lurodrisilva/plat-eng-developer-portal:ref:refs/heads/main",
+  ]
 
   description = <<-EOT
     GitHub OIDC federated-credential subjects permitted to push to the platform
     ACR — one federated credential per subject, exact match (classic FICs do not
-    support wildcards). The default is the net-hexagonal master publish path
-    (release.yml on push to master). A tagged release mints subject
-    `repo:lurodrisilva/net-hexagonal:ref:refs/tags/<tag>`; add that subject, or a
-    GitHub `environment:` subject, when release.yml is re-pointed at ACR.
+    support wildcards). A tagged release mints subject
+    `repo:lurodrisilva/<repo>:ref:refs/tags/<tag>`; add that subject, or a GitHub
+    `environment:` subject, when a release path needs one.
+
+    Subjects, and why each is here:
+
+      net-hexagonal:refs/heads/master
+        The application publish path (release.yml on push to master). Still
+        publishes to GHCR — this only makes ACR pushable.
+
+      plat-eng-developer-portal:refs/heads/main
+        The developer portal image (slice P4 of the portal public-endpoint
+        spec). Note the branch is `main`, not `master`: the subject is an exact
+        string and the wrong branch name simply fails to mint a token, with
+        AADSTS700213 rather than anything that names the branch.
+
+    THE BLAST RADIUS IS THE REGISTRY, NOT THE REPOSITORY. AcrPush is assigned at
+    registry scope below, so every subject listed here can push over every
+    repository in the registry — a portal workflow can overwrite the application
+    image and vice versa. A separate identity per repo would NOT change that; it
+    would only make the pusher distinguishable in registry audit logs. Adding a
+    subject here is therefore a trust decision about the whole registry, and the
+    reason the list is short and explicit rather than a wildcard.
   EOT
 }
 
@@ -146,7 +172,7 @@ resource "azurerm_role_assignment" "acr_argocd_pull" {
 ################################################################################
 
 output "acr_cicd_push_client_id" {
-  description = "Client ID of the CI push UAMI (ADR-0021 gate 1). Feed to net-hexagonal release.yml's azure/login (client-id) when re-pointing CI at ACR. Null when acr_cicd_push_enabled = false or acr_enabled = false."
+  description = "Client ID of the CI push UAMI (ADR-0021 gate 1). Feed to a workflow's azure/login (client-id) — plat-eng-developer-portal's release.yml already does, and net-hexagonal release.yml will when it is re-pointed off GHCR. Null when acr_cicd_push_enabled = false or acr_enabled = false."
   value       = try(azurerm_user_assigned_identity.acr_cicd_push[0].client_id, null)
 }
 
