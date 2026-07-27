@@ -50,6 +50,15 @@ variable "acr_cicd_push_enabled" {
 variable "acr_cicd_github_subjects" {
   type = set(string)
   default = [
+    # IMMUTABLE-FORM subjects — these are the ones that actually work. The
+    # numeric ids are GitHub's owner id and repository id; `lurodrisilva` is
+    # 168383842, `plat-eng-developer-portal` is 1301756039 and `net-hexagonal`
+    # is 1208160267. See the note below before editing either list.
+    "repo:lurodrisilva@168383842/plat-eng-developer-portal@1301756039:ref:refs/heads/main",
+    "repo:lurodrisilva@168383842/net-hexagonal@1208160267:ref:refs/heads/master",
+
+    # Documented-form subjects, kept as a fallback in case the issuer emits the
+    # classic claim again. Neither of these matches what GitHub presents today.
     "repo:lurodrisilva/net-hexagonal:ref:refs/heads/master",
     "repo:lurodrisilva/plat-eng-developer-portal:ref:refs/heads/main",
   ]
@@ -57,21 +66,41 @@ variable "acr_cicd_github_subjects" {
   description = <<-EOT
     GitHub OIDC federated-credential subjects permitted to push to the platform
     ACR — one federated credential per subject, exact match (classic FICs do not
-    support wildcards). A tagged release mints subject
-    `repo:lurodrisilva/<repo>:ref:refs/tags/<tag>`; add that subject, or a GitHub
-    `environment:` subject, when a release path needs one.
+    support wildcards). A tagged release mints a `:ref:refs/tags/<tag>` subject;
+    add that, or a GitHub `environment:` subject, when a release path needs one.
 
-    Subjects, and why each is here:
+    THE SUBJECT GITHUB PRESENTS IS NOT THE ONE THE DOCUMENTATION DESCRIBES.
+    Every guide, including Microsoft's, gives the form
+    `repo:<owner>/<repo>:ref:refs/heads/<branch>`. What the issuer actually
+    sends is the IMMUTABLE form, with GitHub's numeric owner and repository ids
+    embedded:
 
-      net-hexagonal:refs/heads/master
-        The application publish path (release.yml on push to master). Still
-        publishes to GHCR — this only makes ACR pushable.
+      repo:lurodrisilva@168383842/plat-eng-developer-portal@1301756039:ref:refs/heads/main
 
-      plat-eng-developer-portal:refs/heads/main
-        The developer portal image (slice P4 of the portal public-endpoint
-        spec). Note the branch is `main`, not `master`: the subject is an exact
-        string and the wrong branch name simply fails to mint a token, with
-        AADSTS700213 rather than anything that names the branch.
+    The ids are the point of that form — it survives a rename, where the name
+    form does not. Read them from `gh api repos/<owner>/<repo>` (`.owner.id`,
+    `.id`), or simply from the failing run: azure/login prints `subject claim -
+    ...` immediately before the error, which is the fastest way to get the exact
+    string.
+
+    There is no way to opt back into the classic form. The repository already
+    reports `use_immutable_subject: false` from
+    `/repos/{owner}/{repo}/actions/oidc/customization/sub` while its
+    `sub_claim_prefix` is the immutable one, so the flag does not describe what
+    is emitted.
+
+    This was latent from the day gate 1 landed and could not have been noticed
+    until something used it: net-hexagonal publishes to GHCR, so its credential
+    was never exercised. The portal (slice P4) is the first real consumer and
+    the first to fail — with AADSTS700213 "No matching federated identity record
+    found for presented assertion subject", which names the presented subject
+    and nothing about why it differs.
+
+    net-hexagonal's immutable subject is included here as the same one-line fix,
+    but it is UNEXERCISED — nothing pushes to ACR from that repository yet.
+
+    The branch also matters and is equally silent: the portal is `main`, the
+    application is `master`. A wrong branch produces the same AADSTS700213.
 
     THE BLAST RADIUS IS THE REGISTRY, NOT THE REPOSITORY. AcrPush is assigned at
     registry scope below, so every subject listed here can push over every
